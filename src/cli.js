@@ -111,7 +111,16 @@ if (fileIdx !== -1 && args[fileIdx + 1]) {
 
 // Parse positional file argument (command <file>)
 if (!flags.file && args[1] && !args[1].startsWith('-')) {
-  const commands = ['analyze', 'score', 'humanize', 'report', 'suggest', 'stats', 'scan', 'compare'];
+  const commands = [
+    'analyze',
+    'score',
+    'humanize',
+    'report',
+    'suggest',
+    'stats',
+    'scan',
+    'compare',
+  ];
   if (!commands.includes(args[1])) {
     flags.file = args[1];
   }
@@ -621,7 +630,9 @@ function formatScanReport(scanResult, failAbove = null) {
   lines.push('');
 
   if (scanResult.skipped.length > 0) {
-    lines.push(color.gray(`  ${scanResult.skipped.length} files skipped (too short or unreadable).`));
+    lines.push(
+      color.gray(`  ${scanResult.skipped.length} files skipped (too short or unreadable).`),
+    );
     lines.push('');
   }
 

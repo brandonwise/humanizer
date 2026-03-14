@@ -52,7 +52,7 @@ describe('scanPath', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
 
     const aiText =
-      "Great question! Here is a comprehensive overview. This serves as a testament to innovation. I hope this helps!";
+      'Great question! Here is a comprehensive overview. This serves as a testament to innovation. I hope this helps!';
     const humanText = 'The patch fixes two bugs. Build time dropped from 9m to 7m.';
 
     fs.writeFileSync(path.join(tmp, 'ai.md'), aiText);

@@ -16,6 +16,11 @@
 
 const { analyze } = require('./analyzer');
 
+const HIDDEN_UNICODE_CHARS = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF|\u00AD)/;
+const HIDDEN_UNICODE_CHARS_GLOBAL = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF|\u00AD)/g;
+const NON_BREAKING_SPACES = /(?:\u00A0|\u202F)/;
+const NON_BREAKING_SPACES_GLOBAL = /(?:\u00A0|\u202F)/g;
+
 // ─── Automatic Fixes ─────────────────────────────────────
 
 /**
@@ -40,12 +45,12 @@ function autoFix(text) {
   }
 
   // Hidden obfuscation chars → remove/normalize
-  if (/[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/.test(result)) {
-    result = result.replace(/[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/g, '');
+  if (HIDDEN_UNICODE_CHARS.test(result)) {
+    result = result.replace(HIDDEN_UNICODE_CHARS_GLOBAL, '');
     fixes.push('Removed hidden unicode characters (zero-width/soft hyphen)');
   }
-  if (/[\u00A0\u202F]/.test(result)) {
-    result = result.replace(/[\u00A0\u202F]/g, ' ');
+  if (NON_BREAKING_SPACES.test(result)) {
+    result = result.replace(NON_BREAKING_SPACES_GLOBAL, ' ');
     fixes.push('Normalized non-breaking spaces to regular spaces');
   }
 

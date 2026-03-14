@@ -85,11 +85,7 @@ function countWords(text) {
  * Scan file or directory and return per-file scores.
  */
 function scanPath(targetPath, opts = {}) {
-  const {
-    exts = DEFAULT_SCAN_EXTENSIONS,
-    minWords = 1,
-    includeStats = false,
-  } = opts;
+  const { exts = DEFAULT_SCAN_EXTENSIONS, minWords = 1, includeStats = false } = opts;
 
   const files = collectTextFiles(targetPath, { exts, ignoreDirs: opts.ignoreDirs });
 
@@ -195,13 +191,9 @@ function compareTexts(beforeText, afterText) {
     delta: p.afterCount - p.beforeCount,
   }));
 
-  const improvements = deltas
-    .filter((d) => d.delta < 0)
-    .sort((a, b) => a.delta - b.delta);
+  const improvements = deltas.filter((d) => d.delta < 0).sort((a, b) => a.delta - b.delta);
 
-  const regressions = deltas
-    .filter((d) => d.delta > 0)
-    .sort((a, b) => b.delta - a.delta);
+  const regressions = deltas.filter((d) => d.delta > 0).sort((a, b) => b.delta - a.delta);
 
   return {
     before: {

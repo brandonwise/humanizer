@@ -221,8 +221,8 @@ const COPULA_AVOIDANCE = [
   /\boperates as( a)?\b/gi,
 ];
 
-const HIDDEN_UNICODE_CHARS = /[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/g;
-const NON_BREAKING_SPACES = /[\u00A0\u202F]/g;
+const HIDDEN_UNICODE_CHARS = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF|\u00AD)/g;
+const NON_BREAKING_SPACES = /(?:\u00A0|\u202F)/g;
 
 // ─── Pattern Definitions ─────────────────────────────────
 
