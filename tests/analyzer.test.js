@@ -314,6 +314,16 @@ describe('pattern detection', () => {
     expect(result.findings.length).toBeGreaterThan(0);
     expect(result.totalMatches).toBeGreaterThanOrEqual(2);
   });
+
+  // 29. Invisible unicode obfuscation
+  it('detects hidden unicode obfuscation characters', () => {
+    const text =
+      'This looks normal but has hidden chars: de\u200Btector and eva\u00ADsion with two\u00A0spaces\u00A0here.';
+    const result = analyze(text, { patternsToCheck: [29] });
+    expect(result.findings.length).toBeGreaterThan(0);
+    expect(result.findings[0].patternId).toBe(29);
+    expect(result.totalMatches).toBeGreaterThanOrEqual(3);
+  });
 });
 
 // ─── AI Sample Full Analysis ─────────────────────────────

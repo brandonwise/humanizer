@@ -2,6 +2,15 @@
 
 This file tracks what shipped and what we plan to build next.
 
+## Shipped in v2.3
+
+### Detection hardening (pattern 29)
+
+- Added **Invisible unicode obfuscation** detection (zero-width chars, soft hyphens, dense NBSP usage).
+- Added safe auto-fix support to strip/normalize these characters.
+
+Why: more detector-evasion tools now inject hidden unicode to appear "human" while remaining machine-generated.
+
 ## Shipped in v2.2
 
 ### New detection patterns (25-28)

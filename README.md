@@ -1,12 +1,12 @@
 # humanizer
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen)
 ![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 Detect and remove signs of AI-generated writing. Makes text sound natural and human.
 
-An [OpenClaw](https://github.com/nichochar/openclaw) skill and standalone CLI tool that scans text for **28 AI writing patterns** using **500+ vocabulary terms** and **statistical text analysis** (burstiness, type-token ratio, readability metrics) — then provides actionable suggestions to fix them.
+An [OpenClaw](https://github.com/nichochar/openclaw) skill and standalone CLI tool that scans text for **29 AI writing patterns** using **500+ vocabulary terms** and **statistical text analysis** (burstiness, type-token ratio, readability metrics) — then provides actionable suggestions to fix them.
 
 Based on [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), [Copyleaks stylistic fingerprint research](https://arxiv.org/abs/2503.01659), and [blader/humanizer](https://github.com/blader/humanizer).
 
@@ -56,7 +56,7 @@ The scoring engine combines three signal types:
 │   Pattern Score    │    Uniformity Score         │
 │   (70% weight)     │    (30% weight)             │
 ├────────────────────┼────────────────────────────┤
-│ • 28 pattern       │ • Burstiness (sentence     │
+│ • 29 pattern       │ • Burstiness (sentence     │
 │   detectors        │   length variation)         │
 │ • 500+ vocabulary  │ • Type-token ratio          │
 │   terms (3 tiers)  │ • Trigram repetition        │
@@ -118,6 +118,7 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 
 - **Repo scan (`scan`)** — analyze a whole folder, rank files by risk, and optionally fail CI with `--fail-above`.
 - **Draft compare (`compare`)** — compare two versions of text and show exactly which patterns improved or regressed.
+- **Unicode obfuscation detection (pattern 29)** — flags hidden zero-width/soft-hyphen tricks and suspicious non-breaking-space density often used in detector-evasion text.
 
 ### Options
 
@@ -224,7 +225,7 @@ console.log(stats.typeTokenRatio);   // Vocabulary diversity
 
 ## How scoring works
 
-1. **Pattern detection** — Each of 28 detectors scans for regex matches. Matches are weighted 1-5.
+1. **Pattern detection** — Each of 29 detectors scans for regex matches. Matches are weighted 1-5.
 2. **Density calculation** — Weighted matches per 100 words, on a logarithmic curve (prevents runaway scores).
 3. **Breadth bonus** — More unique pattern types = higher score (up to +20).
 4. **Category diversity** — Hits across content/language/style/communication/filler = higher score (up to +15).
@@ -347,13 +348,13 @@ Target: consistently **under 25** on the humanizer score.
 humanizer/
 ├── SKILL.md          # OpenClaw skill definition
 ├── src/
-│   ├── patterns.js   # 24 pattern detectors + pattern registry
+│   ├── patterns.js   # 29 pattern detectors + pattern registry
 │   ├── vocabulary.js  # 500+ AI words/phrases (3 tiers)
 │   ├── stats.js       # Statistical analysis engine
 │   ├── analyzer.js    # Composite scoring engine
 │   ├── humanizer.js   # Suggestion engine + auto-fix
 │   └── cli.js         # CLI with colored output
-├── tests/             # Vitest test suite (128 tests)
+├── tests/             # Vitest test suite (136 tests)
 │   ├── analyzer.test.js
 │   ├── humanizer.test.js
 │   ├── statistics.test.js

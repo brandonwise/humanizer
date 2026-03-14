@@ -4,7 +4,7 @@
  * Combines pattern detection with statistical analysis to produce a
  * comprehensive AI writing score. The score uses three signal types:
  *
- *   1. Pattern matches — vocabulary, phrases, structural patterns (24 detectors)
+ *   1. Pattern matches — vocabulary, phrases, structural patterns (29 detectors)
  *   2. Text statistics — burstiness, sentence variation, type-token ratio
  *   3. Category breadth — how many different AI signal types are present
  *

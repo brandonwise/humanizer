@@ -39,6 +39,16 @@ function autoFix(text) {
     fixes.push('Replaced curly single quotes with straight quotes');
   }
 
+  // Hidden obfuscation chars → remove/normalize
+  if (/[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/.test(result)) {
+    result = result.replace(/[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/g, '');
+    fixes.push('Removed hidden unicode characters (zero-width/soft hyphen)');
+  }
+  if (/[\u00A0\u202F]/.test(result)) {
+    result = result.replace(/[\u00A0\u202F]/g, ' ');
+    fixes.push('Normalized non-breaking spaces to regular spaces');
+  }
+
   // Filler phrase replacements (unambiguous)
   const safeFills = [
     { from: /\bin order to\b/gi, to: 'to', label: '"in order to" → "to"' },
@@ -230,6 +240,11 @@ function buildGuidance(analysis) {
   if (ids.has(24)) {
     tips.push(
       'Cut generic conclusions. End with a specific fact instead of "the future looks bright".',
+    );
+  }
+  if (ids.has(29)) {
+    tips.push(
+      'Remove hidden unicode characters (zero-width, soft hyphen, NBSP). They can break readability and look like detector-gaming obfuscation.',
     );
   }
 

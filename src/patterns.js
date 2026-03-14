@@ -1,7 +1,7 @@
 /**
  * patterns.js — AI writing pattern detection engine.
  *
- * 24 pattern detectors organized into 5 categories, with a registry
+ * 29 pattern detectors organized into 5 categories, with a registry
  * that supports dynamic add/remove and custom word lists.
  *
  * Architecture:
@@ -220,6 +220,9 @@ const COPULA_AVOIDANCE = [
   /\bacts as( a)?\b/gi,
   /\boperates as( a)?\b/gi,
 ];
+
+const HIDDEN_UNICODE_CHARS = /[\u200B\u200C\u200D\u2060\uFEFF\u00AD]/g;
+const NON_BREAKING_SPACES = /[\u00A0\u202F]/g;
 
 // ─── Pattern Definitions ─────────────────────────────────
 
@@ -1037,6 +1040,40 @@ const patterns = [
       for (const regex of patterns) {
         results.push(...findMatches(text, regex, "Just answer. Don't restate the question."));
       }
+      return results;
+    },
+  },
+
+  {
+    id: 29,
+    name: 'Invisible unicode obfuscation',
+    category: 'style',
+    description:
+      'Hidden unicode characters (zero-width chars, soft hyphens, non-breaking spaces) used to evade detectors or distort text.',
+    weight: 4,
+    detect(text) {
+      const results = [
+        ...findMatches(
+          text,
+          HIDDEN_UNICODE_CHARS,
+          'Remove hidden unicode characters. Some tools insert these to game detectors.',
+          'high',
+        ),
+      ];
+
+      const nbspMatches = findMatches(
+        text,
+        NON_BREAKING_SPACES,
+        'Replace non-breaking spaces with regular spaces unless formatting requires them.',
+        'medium',
+      );
+
+      // A single NBSP is often harmless (copy/paste from docs).
+      // Flag when density suggests obfuscation or accidental corruption.
+      if (nbspMatches.length >= 2) {
+        results.push(...nbspMatches);
+      }
+
       return results;
     },
   },

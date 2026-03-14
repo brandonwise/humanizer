@@ -69,6 +69,15 @@ describe('autoFix', () => {
     expect(fixes.some((f) => f.includes('chatbot'))).toBe(true);
   });
 
+  it('removes hidden unicode obfuscation characters', () => {
+    const { text, fixes } = autoFix(
+      'de\u200Btector eva\u00ADsion with\u00A0non-breaking\u202Fspaces',
+    );
+    expect(text).toBe('detector evasion with non-breaking spaces');
+    expect(fixes.some((f) => f.includes('hidden unicode'))).toBe(true);
+    expect(fixes.some((f) => f.includes('non-breaking'))).toBe(true);
+  });
+
   it('handles text with no fixable issues', () => {
     const { text, fixes } = autoFix('The cat sat on the mat.');
     expect(text).toBe('The cat sat on the mat.');
