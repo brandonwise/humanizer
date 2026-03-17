@@ -91,6 +91,7 @@ function scanPath(targetPath, opts = {}) {
 
   const results = [];
   const skipped = [];
+  const patternHotspotMap = new Map();
 
   for (const file of files) {
     let text;
@@ -108,6 +109,23 @@ function scanPath(targetPath, opts = {}) {
     }
 
     const result = analyze(text, { includeStats, verbose: false });
+
+    for (const finding of result.findings) {
+      const existing = patternHotspotMap.get(finding.patternId) || {
+        patternId: finding.patternId,
+        patternName: finding.patternName,
+        totalMatches: 0,
+        affectedFiles: 0,
+        maxPerFile: 0,
+      };
+
+      existing.totalMatches += finding.matchCount;
+      existing.affectedFiles += 1;
+      existing.maxPerFile = Math.max(existing.maxPerFile, finding.matchCount);
+
+      patternHotspotMap.set(finding.patternId, existing);
+    }
+
     results.push({
       file,
       score: result.score,
@@ -126,6 +144,14 @@ function scanPath(targetPath, opts = {}) {
 
   results.sort((a, b) => b.score - a.score || b.totalMatches - a.totalMatches);
 
+  const patternHotspots = [...patternHotspotMap.values()].sort(
+    (a, b) =>
+      b.totalMatches - a.totalMatches ||
+      b.affectedFiles - a.affectedFiles ||
+      b.maxPerFile - a.maxPerFile ||
+      a.patternId - b.patternId,
+  );
+
   const summary = {
     scannedFiles: results.length,
     skippedFiles: skipped.length,
@@ -134,12 +160,14 @@ function scanPath(targetPath, opts = {}) {
       : 0,
     maxScore: results.length ? Math.max(...results.map((r) => r.score)) : 0,
     minScore: results.length ? Math.min(...results.map((r) => r.score)) : 0,
+    uniquePatterns: patternHotspots.length,
   };
 
   return {
     targetPath: path.resolve(targetPath),
     summary,
     files: results,
+    patternHotspots,
     skipped,
   };
 }

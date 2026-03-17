@@ -1,7 +1,7 @@
 # humanizer
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Tests](https://img.shields.io/badge/tests-136%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)
 ![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 Detect and remove signs of AI-generated writing. Makes text sound natural and human.
@@ -107,7 +107,7 @@ humanizer humanize -f article.txt
 # Apply safe auto-fixes
 humanizer humanize --autofix -f article.txt
 
-# Scan an entire docs folder and rank risk
+# Scan an entire docs folder, rank risk, and show recurring pattern hotspots
 humanizer scan docs --ext md,txt --fail-above 45
 
 # Compare draft revisions and see score delta
@@ -116,7 +116,7 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 
 ### New core capabilities
 
-- **Repo scan (`scan`)** — analyze a whole folder, rank files by risk, and optionally fail CI with `--fail-above`.
+- **Repo scan (`scan`)** — analyze a whole folder, rank files by risk, surface cross-file pattern hotspots, and optionally fail CI with `--fail-above`.
 - **Draft compare (`compare`)** — compare two versions of text and show exactly which patterns improved or regressed.
 - **Unicode obfuscation detection (pattern 29)** — flags hidden zero-width/soft-hyphen tricks and suspicious non-breaking-space density often used in detector-evasion text.
 

@@ -64,6 +64,28 @@ describe('scanPath', () => {
     expect(result.files.length).toBe(2);
     expect(result.files[0].score).toBeGreaterThanOrEqual(result.files[1].score);
     expect(result.files[0].file.endsWith('ai.md')).toBe(true);
+    expect(result.summary.uniquePatterns).toBeGreaterThan(0);
+    expect(result.patternHotspots.length).toBeGreaterThan(0);
+    expect(result.patternHotspots[0]).toHaveProperty('affectedFiles');
+  });
+
+  it('aggregates hotspot patterns across multiple files', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    const repeated1 =
+      'Great question! This serves as a testament to innovation. Let me know if you need anything else.';
+    const repeated2 =
+      'Great question! This serves as a testament to modern workflows. Let me know if you need more detail.';
+
+    fs.writeFileSync(path.join(tmp, 'one.md'), repeated1);
+    fs.writeFileSync(path.join(tmp, 'two.md'), repeated2);
+
+    const result = scanPath(tmp, { exts: ['md'], minWords: 3 });
+
+    expect(result.patternHotspots.length).toBeGreaterThan(0);
+    const sharedPattern = result.patternHotspots.find((p) => p.affectedFiles >= 2);
+    expect(sharedPattern).toBeDefined();
+    expect(sharedPattern.totalMatches).toBeGreaterThanOrEqual(sharedPattern.affectedFiles);
   });
 });
 

@@ -611,6 +611,9 @@ function formatScanReport(scanResult, failAbove = null) {
   lines.push(
     `  Avg score: ${scanResult.summary.averageScore}  |  Max: ${scanResult.summary.maxScore}  |  Min: ${scanResult.summary.minScore}`,
   );
+  if (typeof scanResult.summary.uniquePatterns === 'number') {
+    lines.push(`  Unique patterns: ${scanResult.summary.uniquePatterns}`);
+  }
   lines.push('');
 
   if (files.length === 0) {
@@ -628,6 +631,16 @@ function formatScanReport(scanResult, failAbove = null) {
     );
   }
   lines.push('');
+
+  if (scanResult.patternHotspots && scanResult.patternHotspots.length > 0) {
+    lines.push(color.bold('  Common pattern hotspots:'));
+    for (const item of scanResult.patternHotspots.slice(0, 8)) {
+      lines.push(
+        `  ${color.cyan(`[${item.patternId}]`)} ${item.patternName} ${color.dim(`(${item.totalMatches} matches across ${item.affectedFiles} files)`)}`,
+      );
+    }
+    lines.push('');
+  }
 
   if (scanResult.skipped.length > 0) {
     lines.push(
