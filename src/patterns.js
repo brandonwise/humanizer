@@ -1077,6 +1077,166 @@ const patterns = [
       return results;
     },
   },
+
+  // ── STOP-SLOP PATTERNS (30-36) ──────────────────────────
+  // Based on https://github.com/hardikpandya/stop-slop
+
+  {
+    id: 30,
+    name: 'Negation-then-correction',
+    category: 'language',
+    description:
+      "Negating one framing then asserting a corrected one. 'This isn't X. This is Y.' / 'Not X. Y.' — a crutch that delays the point.",
+    weight: 5,
+    detect(text) {
+      const regexes = [
+        /(this|it|that) (is|was|isn't|wasn't) not .{3,60}[.,]\s*(it|this|that) (is|was)\b/gi,
+        /^not\s+[A-Z].{0,80}\.\s+[A-Z]/gm,
+        /\bforget .{3,40}[.!]\s/gi,
+        /\bless .{3,40}, more .{3,40}/gi,
+      ];
+      const results = [];
+      for (const regex of regexes) {
+        results.push(
+          ...findMatches(
+            text,
+            regex,
+            'State the positive claim directly. Drop the negation.',
+            'high',
+          ),
+        );
+      }
+      return results;
+    },
+  },
+
+  {
+    id: 31,
+    name: 'Throat-clearing openers',
+    category: 'language',
+    description:
+      "Opening phrases that delay the point. 'Here's the thing:', 'It turns out', 'The uncomfortable truth is' — announce instead of stating.",
+    weight: 4,
+    detect(text) {
+      return findMatches(
+        text,
+        /^(here's (the thing|what|why|this|that)|it turns out( that)?|the uncomfortable truth (is|was)|the real \w+ is|let me be clear|the truth is,|i'll say it again|i'm going to be honest|can we talk about)/gim,
+        'Cut the opener. Start with the point.',
+        'high',
+      );
+    },
+  },
+
+  {
+    id: 32,
+    name: 'False agency',
+    category: 'language',
+    description:
+      "Inanimate things performing human actions. 'The decision emerges', 'The data tells us', 'The market rewards' — AI avoids naming the human actor.",
+    weight: 4,
+    detect(text) {
+      return findMatches(
+        text,
+        /\b(the (decision|culture|conversation|data|market|change|trend|momentum|shift|narrative|system|process|policy)) (emerges?|shifted?|moves?|tells?|rewards?|becomes?|happens?|accelerates?|drives?|creates?|determines?|reveals?)\b/gi,
+        'Name the human actor. Who actually did this?',
+        'high',
+      );
+    },
+  },
+
+  {
+    id: 33,
+    name: 'Vague declaratives',
+    category: 'content',
+    description:
+      "Sentences announcing importance without specifying the actual thing. 'The stakes are high', 'The reasons are structural' — filler that adds no information.",
+    weight: 3,
+    detect(text) {
+      const regexes = [
+        /\b(the (reasons?|implications?|consequences?|stakes?|effects?|impact) (are|is) (structural|significant|real|high|serious|clear|profound|important|complex))\b/gi,
+        /\bthis is (the|a) (deepest|biggest|most (important|significant|critical)) (problem|issue|challenge)\b/gi,
+      ];
+      const results = [];
+      for (const regex of regexes) {
+        results.push(
+          ...findMatches(
+            text,
+            regex,
+            "Name the specific thing. Replace 'The implications are significant' with the actual implication.",
+            'medium',
+          ),
+        );
+      }
+      return results;
+    },
+  },
+
+  {
+    id: 34,
+    name: 'Rhetorical setups',
+    category: 'language',
+    description:
+      "Announcing insight rather than delivering it. 'What if I told you', 'Think about it:', 'And that's okay.' — condescending scaffolding.",
+    weight: 3,
+    detect(text) {
+      return findMatches(
+        text,
+        /\b(what if i told you|here's what i mean[,:]|think about it[,:]|and that'?s okay\.?|you already know this,?\s*but|let me walk you through)\b/gi,
+        'Make the point. Skip the rhetorical scaffolding.',
+        'medium',
+      );
+    },
+  },
+
+  {
+    id: 35,
+    name: 'Wh- sentence starters',
+    category: 'style',
+    description:
+      'Starting declarative sentences with What/When/Where/Which/Who/Why/How. Restructure to lead with the subject or action.',
+    weight: 2,
+    detect(text) {
+      const whRegex =
+        /^(what (makes|this (means|shows|matters|tells|does|is)|happens|it|we|you)|when (you|we|they|this)|where (this|we|you)|which (means|is|allows|requires)|how (this|we|you|it)) /gim;
+      const raw = findMatches(
+        text,
+        whRegex,
+        'Restructure. Lead with the subject or action directly.',
+        'low',
+      );
+      // Filter out actual questions (lines ending with ?)
+      const lines = text.split('\n');
+      return raw.filter((r) => {
+        const line = lines[r.line - 1] || '';
+        return !line.trimEnd().endsWith('?');
+      });
+    },
+  },
+
+  {
+    id: 36,
+    name: 'Dramatic fragmentation',
+    category: 'style',
+    description:
+      "Sentence fragments for emphasis. 'That's it. That's the thing.' / 'X. And Y. And Z.' — manufactured profundity.",
+    weight: 2,
+    detect(text) {
+      return [
+        ...findMatches(
+          text,
+          /\.\s+that's (it|the \w+|all|exactly|why|how|what)\.?\s/gi,
+          'Complete sentences. Trust content over presentation.',
+          'medium',
+        ),
+        ...findMatches(
+          text,
+          /\band .{5,40}\.\s+and .{5,40}\./gi,
+          'Complete sentences. Trust content over presentation.',
+          'medium',
+        ),
+      ];
+    },
+  },
 ];
 
 // ─── Pattern Registry ────────────────────────────────────
