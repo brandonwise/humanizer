@@ -30,13 +30,35 @@ function normalizeExtensions(exts) {
     .map((e) => (e.startsWith('.') ? e : `.${e}`));
 }
 
+/** Normalize ignore-dir list and merge with defaults unless disabled. */
+function normalizeIgnoreDirs(ignoreDirs, includeDefaultIgnore = true) {
+  const values = [];
+
+  if (includeDefaultIgnore) {
+    values.push(...DEFAULT_IGNORE_DIRS);
+  }
+
+  if (ignoreDirs && (Array.isArray(ignoreDirs) || ignoreDirs instanceof Set)) {
+    values.push(...ignoreDirs);
+  }
+
+  const normalized = new Set();
+  for (const dir of values) {
+    const name = String(dir).trim();
+    if (name) normalized.add(name);
+  }
+
+  return normalized;
+}
+
 /**
  * Collect text files from a path.
  * If target is a file, returns that file only (if extension matches).
  */
 function collectTextFiles(targetPath, opts = {}) {
-  const { exts = DEFAULT_SCAN_EXTENSIONS, ignoreDirs = DEFAULT_IGNORE_DIRS } = opts;
+  const { exts = DEFAULT_SCAN_EXTENSIONS, ignoreDirs = null, includeDefaultIgnore = true } = opts;
   const normalizedExts = new Set(normalizeExtensions(exts));
+  const ignoreDirSet = normalizeIgnoreDirs(ignoreDirs, includeDefaultIgnore);
 
   const absPath = path.resolve(targetPath);
   const st = fs.statSync(absPath);
@@ -57,7 +79,7 @@ function collectTextFiles(targetPath, opts = {}) {
       const full = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!ignoreDirs.has(entry.name)) {
+        if (!ignoreDirSet.has(entry.name)) {
           stack.push(full);
         }
         continue;
@@ -85,9 +107,15 @@ function countWords(text) {
  * Scan file or directory and return per-file scores.
  */
 function scanPath(targetPath, opts = {}) {
-  const { exts = DEFAULT_SCAN_EXTENSIONS, minWords = 1, includeStats = false } = opts;
+  const {
+    exts = DEFAULT_SCAN_EXTENSIONS,
+    minWords = 1,
+    includeStats = false,
+    ignoreDirs = null,
+    includeDefaultIgnore = true,
+  } = opts;
 
-  const files = collectTextFiles(targetPath, { exts, ignoreDirs: opts.ignoreDirs });
+  const files = collectTextFiles(targetPath, { exts, ignoreDirs, includeDefaultIgnore });
 
   const results = [];
   const skipped = [];
@@ -261,7 +289,9 @@ function scoreLabel(s) {
 
 module.exports = {
   DEFAULT_SCAN_EXTENSIONS,
+  DEFAULT_IGNORE_DIRS,
   normalizeExtensions,
+  normalizeIgnoreDirs,
   collectTextFiles,
   scanPath,
   compareTexts,

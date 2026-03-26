@@ -8,6 +8,7 @@ import os from 'os';
 import path from 'path';
 import {
   normalizeExtensions,
+  normalizeIgnoreDirs,
   collectTextFiles,
   scanPath,
   compareTexts,
@@ -23,6 +24,20 @@ describe('normalizeExtensions', () => {
     const exts = normalizeExtensions([]);
     expect(exts.length).toBeGreaterThan(0);
     expect(exts).toContain('.md');
+  });
+});
+
+describe('normalizeIgnoreDirs', () => {
+  it('merges defaults with user-supplied ignore dirs', () => {
+    const dirs = normalizeIgnoreDirs(['generated']);
+    expect(dirs.has('node_modules')).toBe(true);
+    expect(dirs.has('generated')).toBe(true);
+  });
+
+  it('can disable default ignore dirs', () => {
+    const dirs = normalizeIgnoreDirs(['generated'], false);
+    expect(dirs.has('node_modules')).toBe(false);
+    expect(dirs.has('generated')).toBe(true);
   });
 });
 
@@ -44,6 +59,38 @@ describe('collectTextFiles', () => {
     expect(files.some((f) => f.endsWith('guide.txt'))).toBe(true);
     expect(files.some((f) => f.endsWith('script.js'))).toBe(false);
     expect(files.some((f) => f.includes('node_modules'))).toBe(false);
+  });
+
+  it('supports custom ignored directories', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    fs.mkdirSync(path.join(tmp, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'generated'), { recursive: true });
+
+    fs.writeFileSync(path.join(tmp, 'docs', 'guide.md'), 'ship this change now');
+    fs.writeFileSync(path.join(tmp, 'generated', 'noise.md'), 'Great question! I hope this helps!');
+
+    const files = collectTextFiles(tmp, {
+      exts: ['.md'],
+      ignoreDirs: ['generated'],
+    });
+
+    expect(files.some((f) => f.endsWith('guide.md'))).toBe(true);
+    expect(files.some((f) => f.includes('generated'))).toBe(false);
+  });
+
+  it('can disable default ignore directories', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    fs.mkdirSync(path.join(tmp, 'node_modules', 'pkg'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'node_modules', 'pkg', 'doc.md'), 'scan me too');
+
+    const files = collectTextFiles(tmp, {
+      exts: ['.md'],
+      includeDefaultIgnore: false,
+    });
+
+    expect(files.some((f) => f.includes('node_modules'))).toBe(true);
   });
 });
 
@@ -86,6 +133,31 @@ describe('scanPath', () => {
     const sharedPattern = result.patternHotspots.find((p) => p.affectedFiles >= 2);
     expect(sharedPattern).toBeDefined();
     expect(sharedPattern.totalMatches).toBeGreaterThanOrEqual(sharedPattern.affectedFiles);
+  });
+
+  it('respects custom ignore dirs during scan', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    fs.mkdirSync(path.join(tmp, 'content'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'generated'), { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tmp, 'content', 'notes.md'),
+      'The patch ships today. We validated with integration checks.',
+    );
+    fs.writeFileSync(
+      path.join(tmp, 'generated', 'bot.md'),
+      'Great question! This serves as a testament to innovation. I hope this helps!',
+    );
+
+    const result = scanPath(tmp, {
+      exts: ['md'],
+      minWords: 3,
+      ignoreDirs: ['generated'],
+    });
+
+    expect(result.summary.scannedFiles).toBe(1);
+    expect(result.files[0].file.endsWith('notes.md')).toBe(true);
   });
 });
 

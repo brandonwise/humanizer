@@ -110,6 +110,9 @@ humanizer humanize --autofix -f article.txt
 # Scan an entire docs folder, rank risk, and show recurring pattern hotspots
 humanizer scan docs --ext md,txt --fail-above 45
 
+# Scan a large repo with reusable defaults + custom ignores
+humanizer scan . --config .humanizer.json --ignore-dirs vendor,generated
+
 # Compare draft revisions and see score delta
 humanizer compare --before draft-v1.md --after draft-v2.md
 ```
@@ -117,6 +120,8 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 ### New core capabilities
 
 - **Repo scan (`scan`)** — analyze a whole folder, rank files by risk, surface cross-file pattern hotspots, and optionally fail CI with `--fail-above`.
+- **Config-driven scan defaults** — keep monorepo scan settings in one JSON file (`--config`) and layer one-off overrides from CLI.
+- **Custom ignore controls** — skip noisy directories with `--ignore-dirs` or disable built-in excludes with `--no-default-ignore`.
 - **Draft compare (`compare`)** — compare two versions of text and show exactly which patterns improved or regressed.
 - **Unicode obfuscation detection (pattern 29)** — flags hidden zero-width/soft-hyphen tricks and suspicious non-breaking-space density often used in detector-evasion text.
 
@@ -134,8 +139,33 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 --ext <list>            Extensions for scan (e.g. md,txt,rst)
 --min-words <n>         Skip files shorter than n words (scan)
 --fail-above <n>        Exit non-zero if any scanned file score >= n
---config <file>         Custom config file (JSON)
+--ignore-dirs <list>    Extra dirs to ignore when scanning (comma-separated)
+--no-default-ignore     Disable built-in ignores (.git,node_modules,dist,...)
+--config <file>         Load scan defaults from JSON (scan section)
 --help, -h              Show help
+```
+
+### Scan config file (`--config`)
+
+`--config` reads scan defaults from a JSON file under a top-level `scan` object.
+CLI flags still win when both are provided.
+
+```json
+{
+  "scan": {
+    "extensions": ["md", "txt"],
+    "minWords": 30,
+    "failAbove": 45,
+    "ignoreDirs": ["generated", "vendor"],
+    "includeDefaultIgnore": true
+  }
+}
+```
+
+Then run:
+
+```bash
+humanizer scan . --config .humanizer.json
 ```
 
 ### Score badges

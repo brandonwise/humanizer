@@ -11,6 +11,35 @@ Use humanizer with Claude, ChatGPT, VS Code, OpenClaw, or your own app.
 | HTTP API | Any client | Medium | Custom apps and automations |
 | SKILL.md | OpenClaw | Easy | OpenClaw-native workflows |
 
+## Big Node codebase (CI-friendly scan)
+
+For monorepos, set scan defaults once and keep CI calls short.
+
+`.humanizer.json`:
+
+```json
+{
+  "scan": {
+    "extensions": ["md", "txt"],
+    "minWords": 30,
+    "failAbove": 45,
+    "ignoreDirs": ["generated", "vendor", "fixtures"]
+  }
+}
+```
+
+CI command:
+
+```bash
+npx humanizer scan . --config .humanizer.json
+```
+
+Need a one-off override for a noisy subtree?
+
+```bash
+npx humanizer scan . --config .humanizer.json --ignore-dirs generated,vendor,tmp
+```
+
 ## MCP server (recommended)
 
 ### Install

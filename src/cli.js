@@ -20,6 +20,7 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 const { analyze, score, formatMarkdown, formatJSON } = require('./analyzer');
 const { humanize, formatSuggestions } = require('./humanizer');
 const { computeStats } = require('./stats');
@@ -99,8 +100,10 @@ const flags = {
   threshold: null,
   config: null,
   extensions: null,
-  minWords: 1,
+  minWords: null,
   failAbove: null,
+  ignoreDirs: null,
+  includeDefaultIgnore: null,
 };
 
 // Parse -f / --file flag
@@ -174,7 +177,130 @@ if (minWordsIdx !== -1 && args[minWordsIdx + 1]) {
 const failIdx = args.indexOf('--fail-above');
 if (failIdx !== -1 && args[failIdx + 1]) {
   const n = parseInt(args[failIdx + 1], 10);
-  if (!Number.isNaN(n)) flags.failAbove = n;
+  if (!Number.isNaN(n) && n >= 0) flags.failAbove = n;
+}
+
+// Parse --ignore-dirs flag (scan command)
+const ignoreIdx = args.indexOf('--ignore-dirs');
+if (ignoreIdx !== -1 && args[ignoreIdx + 1]) {
+  flags.ignoreDirs = args[ignoreIdx + 1]
+    .split(',')
+    .map((d) => d.trim())
+    .filter(Boolean);
+}
+
+if (args.includes('--no-default-ignore')) {
+  flags.includeDefaultIgnore = false;
+}
+
+// ─── Scan Config Resolution ──────────────────────────────
+
+function parseNonNegativeInt(value, label) {
+  if (value === undefined || value === null) return null;
+
+  const n = parseInt(String(value), 10);
+  if (Number.isNaN(n) || n < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
+  }
+
+  return n;
+}
+
+function parseDirList(value, label) {
+  if (value === undefined || value === null) return null;
+
+  if (typeof value === 'string') {
+    const dirs = value
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    return dirs.length > 0 ? dirs : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v).trim()).filter(Boolean);
+  }
+
+  throw new Error(`${label} must be a comma-separated string or array.`);
+}
+
+function parseExtensionList(value) {
+  if (value === undefined || value === null) return null;
+
+  if (typeof value === 'string') {
+    const parts = value
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    return parts.length > 0 ? normalizeExtensions(parts) : [];
+  }
+
+  if (Array.isArray(value)) {
+    return normalizeExtensions(value);
+  }
+
+  throw new Error('scan.extensions must be a comma-separated string or array.');
+}
+
+function loadConfig(configPath) {
+  const resolved = path.resolve(configPath);
+
+  let raw;
+  try {
+    raw = fs.readFileSync(resolved, 'utf-8');
+  } catch (err) {
+    throw new Error(`Could not read config file: ${configPath} (${err.message})`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`Invalid JSON in config file ${configPath}: ${err.message}`);
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Config file must contain a JSON object: ${configPath}`);
+  }
+
+  return parsed;
+}
+
+function resolveScanOptions() {
+  let config = {};
+
+  if (flags.config) {
+    config = loadConfig(flags.config);
+  }
+
+  const scanConfig =
+    config.scan && typeof config.scan === 'object' && !Array.isArray(config.scan)
+      ? config.scan
+      : {};
+
+  const configExtensions = parseExtensionList(scanConfig.extensions);
+  const configMinWords = parseNonNegativeInt(scanConfig.minWords, 'scan.minWords');
+  const configFailAbove = parseNonNegativeInt(scanConfig.failAbove, 'scan.failAbove');
+  const configIgnoreDirs = parseDirList(scanConfig.ignoreDirs, 'scan.ignoreDirs');
+  const configIncludeDefaultIgnore =
+    typeof scanConfig.includeDefaultIgnore === 'boolean' ? scanConfig.includeDefaultIgnore : null;
+
+  const extensions = flags.extensions || configExtensions;
+  const minWords = flags.minWords !== null ? flags.minWords : (configMinWords ?? 1);
+  const failAbove = flags.failAbove !== null ? flags.failAbove : configFailAbove;
+  const ignoreDirs = flags.ignoreDirs || configIgnoreDirs || undefined;
+  const includeDefaultIgnore =
+    flags.includeDefaultIgnore !== null
+      ? flags.includeDefaultIgnore
+      : (configIncludeDefaultIgnore ?? true);
+
+  return {
+    extensions,
+    minWords,
+    failAbove,
+    ignoreDirs,
+    includeDefaultIgnore,
+  };
 }
 
 // ─── Help ────────────────────────────────────────────────
@@ -211,7 +337,9 @@ ${color.bold('Options:')}
   --ext <list>            File extensions for scan (e.g. md,txt,rst)
   --min-words <n>         Skip files shorter than n words (scan)
   --fail-above <n>        Exit non-zero if any scanned file score >= n
-  --config <file>         Custom config file (JSON)
+  --ignore-dirs <list>    Extra dirs to ignore when scanning (comma-separated)
+  --no-default-ignore     Disable built-in ignores (.git,node_modules,dist,...)
+  --config <file>         Load scan defaults from JSON (scan section)
   --help, -h              Show this help
 
 ${color.bold('Examples:')}
@@ -235,6 +363,9 @@ ${color.bold('Examples:')}
 
   ${color.gray('# Scan all markdown docs in a repo')}
   humanizer scan docs --ext md --fail-above 45
+
+  ${color.gray('# Scan a large codebase with config defaults')}
+  humanizer scan . --config .humanizer.json --ignore-dirs vendor,generated
 
   ${color.gray('# Compare two drafts')}
   humanizer compare --before draft-v1.md --after draft-v2.md
@@ -764,19 +895,30 @@ async function main() {
 
     case 'scan': {
       const target = flags.file || '.';
+
+      let scanOptions;
+      try {
+        scanOptions = resolveScanOptions();
+      } catch (err) {
+        console.error(color.red(`Error: ${err.message}`));
+        process.exit(1);
+      }
+
       const scanResult = scanPath(target, {
-        exts: flags.extensions || undefined,
-        minWords: flags.minWords,
+        exts: scanOptions.extensions || undefined,
+        minWords: scanOptions.minWords,
+        ignoreDirs: scanOptions.ignoreDirs,
+        includeDefaultIgnore: scanOptions.includeDefaultIgnore,
       });
 
       if (flags.json) {
         console.log(JSON.stringify(scanResult, null, 2));
       } else {
-        console.log(formatScanReport(scanResult, flags.failAbove));
+        console.log(formatScanReport(scanResult, scanOptions.failAbove));
       }
 
-      if (flags.failAbove !== null) {
-        const hasFailure = scanResult.files.some((f) => f.score >= flags.failAbove);
+      if (scanOptions.failAbove !== null) {
+        const hasFailure = scanResult.files.some((f) => f.score >= scanOptions.failAbove);
         if (hasFailure) process.exit(2);
       }
       break;
