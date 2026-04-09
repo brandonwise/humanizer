@@ -70,6 +70,22 @@ describe('analyze', () => {
     expect(result.stats).toHaveProperty('burstiness');
     expect(result.stats).toHaveProperty('typeTokenRatio');
   });
+
+  it('can ignore code snippets during analysis', () => {
+    const text = [
+      'Release notes:',
+      '```md',
+      'Great question! This serves as a testament to innovation.',
+      '```',
+      'Actual summary: shipped bug fixes and reduced latency by 18%.',
+    ].join('\n');
+
+    const regular = analyze(text);
+    const ignoreCode = analyze(text, { ignoreCode: true });
+
+    expect(regular.score).toBeGreaterThan(ignoreCode.score);
+    expect(ignoreCode.summary.toLowerCase()).not.toContain('great question');
+  });
 });
 
 // ─── Score Function ──────────────────────────────────────
@@ -85,6 +101,13 @@ describe('score', () => {
     const aiScore = score(loadFixture('ai-sample-1.txt'));
     const humanScore = score(loadFixture('human-sample-1.txt'));
     expect(aiScore).toBeGreaterThan(humanScore);
+  });
+
+  it('accepts analysis options', () => {
+    const text = '```md\nGreat question!\n```\nShipped bug fixes yesterday.';
+    const regular = score(text);
+    const ignoreCode = score(text, { ignoreCode: true });
+    expect(regular).toBeGreaterThan(ignoreCode);
   });
 });
 

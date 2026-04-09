@@ -113,6 +113,7 @@ function scanPath(targetPath, opts = {}) {
     includeStats = false,
     ignoreDirs = null,
     includeDefaultIgnore = true,
+    ignoreCode = false,
   } = opts;
 
   const files = collectTextFiles(targetPath, { exts, ignoreDirs, includeDefaultIgnore });
@@ -136,7 +137,7 @@ function scanPath(targetPath, opts = {}) {
       continue;
     }
 
-    const result = analyze(text, { includeStats, verbose: false });
+    const result = analyze(text, { includeStats, verbose: false, ignoreCode });
 
     for (const finding of result.findings) {
       const existing = patternHotspotMap.get(finding.patternId) || {
@@ -217,9 +218,10 @@ function toPatternHistogram(result) {
 /**
  * Compare two text drafts and show score + pattern deltas.
  */
-function compareTexts(beforeText, afterText) {
-  const before = analyze(beforeText, { verbose: true, includeStats: true });
-  const after = analyze(afterText, { verbose: true, includeStats: true });
+function compareTexts(beforeText, afterText, opts = {}) {
+  const { ignoreCode = false } = opts;
+  const before = analyze(beforeText, { verbose: true, includeStats: true, ignoreCode });
+  const after = analyze(afterText, { verbose: true, includeStats: true, ignoreCode });
 
   const histogram = toPatternHistogram(before);
   for (const f of after.findings) {
@@ -274,10 +276,10 @@ function compareTexts(beforeText, afterText) {
 }
 
 /** Compare two files. */
-function compareFiles(beforePath, afterPath) {
+function compareFiles(beforePath, afterPath, opts = {}) {
   const beforeText = fs.readFileSync(path.resolve(beforePath), 'utf-8');
   const afterText = fs.readFileSync(path.resolve(afterPath), 'utf-8');
-  return compareTexts(beforeText, afterText);
+  return compareTexts(beforeText, afterText, opts);
 }
 
 function scoreLabel(s) {

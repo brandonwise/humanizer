@@ -1,7 +1,7 @@
 # humanizer
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-153%20passing-brightgreen)
 ![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 Detect and remove signs of AI-generated writing. Makes text sound natural and human.
@@ -122,6 +122,7 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 - **Repo scan (`scan`)** — analyze a whole folder, rank files by risk, surface cross-file pattern hotspots, and optionally fail CI with `--fail-above`.
 - **Config-driven scan defaults** — keep monorepo scan settings in one JSON file (`--config`) and layer one-off overrides from CLI.
 - **Custom ignore controls** — skip noisy directories with `--ignore-dirs` or disable built-in excludes with `--no-default-ignore`.
+- **Code-aware analysis mode (`--ignore-code`)** — ignore fenced code blocks and inline code snippets so technical docs do not get false positives from sample code.
 - **Draft compare (`compare`)** — compare two versions of text and show exactly which patterns improved or regressed.
 - **Unicode obfuscation detection (pattern 29)** — flags hidden zero-width/soft-hyphen tricks and suspicious non-breaking-space density often used in detector-evasion text.
 
@@ -141,6 +142,7 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 --fail-above <n>        Exit non-zero if any scanned file score >= n
 --ignore-dirs <list>    Extra dirs to ignore when scanning (comma-separated)
 --no-default-ignore     Disable built-in ignores (.git,node_modules,dist,...)
+--ignore-code           Ignore fenced/inline code snippets during analysis
 --config <file>         Load scan defaults from JSON (scan section)
 --help, -h              Show help
 ```
@@ -157,7 +159,8 @@ CLI flags still win when both are provided.
     "minWords": 30,
     "failAbove": 45,
     "ignoreDirs": ["generated", "vendor"],
-    "includeDefaultIgnore": true
+    "includeDefaultIgnore": true,
+    "ignoreCode": true
   }
 }
 ```
@@ -166,6 +169,8 @@ Then run:
 
 ```bash
 humanizer scan . --config .humanizer.json
+# or one-off:
+humanizer analyze docs/guide.md --ignore-code
 ```
 
 ### Score badges

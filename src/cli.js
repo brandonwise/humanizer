@@ -25,6 +25,7 @@ const { analyze, score, formatMarkdown, formatJSON } = require('./analyzer');
 const { humanize, formatSuggestions } = require('./humanizer');
 const { computeStats } = require('./stats');
 const { scanPath, compareFiles, normalizeExtensions } = require('./workflows');
+const { stripCodeSnippets } = require('./preprocess');
 
 // ─── Tiny Color Helper (no chalk dependency) ─────────────
 
@@ -104,6 +105,7 @@ const flags = {
   failAbove: null,
   ignoreDirs: null,
   includeDefaultIgnore: null,
+  ignoreCode: null,
 };
 
 // Parse -f / --file flag
@@ -191,6 +193,10 @@ if (ignoreIdx !== -1 && args[ignoreIdx + 1]) {
 
 if (args.includes('--no-default-ignore')) {
   flags.includeDefaultIgnore = false;
+}
+
+if (args.includes('--ignore-code')) {
+  flags.ignoreCode = true;
 }
 
 // ─── Scan Config Resolution ──────────────────────────────
@@ -284,6 +290,8 @@ function resolveScanOptions() {
   const configIgnoreDirs = parseDirList(scanConfig.ignoreDirs, 'scan.ignoreDirs');
   const configIncludeDefaultIgnore =
     typeof scanConfig.includeDefaultIgnore === 'boolean' ? scanConfig.includeDefaultIgnore : null;
+  const configIgnoreCode =
+    typeof scanConfig.ignoreCode === 'boolean' ? scanConfig.ignoreCode : null;
 
   const extensions = flags.extensions || configExtensions;
   const minWords = flags.minWords !== null ? flags.minWords : (configMinWords ?? 1);
@@ -293,6 +301,7 @@ function resolveScanOptions() {
     flags.includeDefaultIgnore !== null
       ? flags.includeDefaultIgnore
       : (configIncludeDefaultIgnore ?? true);
+  const ignoreCode = flags.ignoreCode !== null ? flags.ignoreCode : (configIgnoreCode ?? false);
 
   return {
     extensions,
@@ -300,6 +309,7 @@ function resolveScanOptions() {
     failAbove,
     ignoreDirs,
     includeDefaultIgnore,
+    ignoreCode,
   };
 }
 
@@ -339,6 +349,7 @@ ${color.bold('Options:')}
   --fail-above <n>        Exit non-zero if any scanned file score >= n
   --ignore-dirs <list>    Extra dirs to ignore when scanning (comma-separated)
   --no-default-ignore     Disable built-in ignores (.git,node_modules,dist,...)
+  --ignore-code           Ignore fenced/inline code snippets during analysis
   --config <file>         Load scan defaults from JSON (scan section)
   --help, -h              Show this help
 
@@ -348,6 +359,9 @@ ${color.bold('Examples:')}
 
   ${color.gray('# Analyze a file')}
   humanizer analyze essay.txt
+
+  ${color.gray('# Analyze docs while ignoring code examples')}
+  humanizer analyze docs/guide.md --ignore-code
 
   ${color.gray('# Full markdown report')}
   humanizer report article.txt > report.md
@@ -363,6 +377,9 @@ ${color.bold('Examples:')}
 
   ${color.gray('# Scan all markdown docs in a repo')}
   humanizer scan docs --ext md --fail-above 45
+
+  ${color.gray('# Scan docs but ignore fenced/inline code snippets')}
+  humanizer scan docs --ext md --ignore-code
 
   ${color.gray('# Scan a large codebase with config defaults')}
   humanizer scan . --config .humanizer.json --ignore-dirs vendor,generated
@@ -814,6 +831,7 @@ async function main() {
   const opts = {
     verbose: flags.verbose,
     patternsToCheck: flags.patterns,
+    ignoreCode: flags.ignoreCode === true,
   };
 
   switch (command) {
@@ -828,7 +846,7 @@ async function main() {
     }
 
     case 'score': {
-      const s = score(text);
+      const s = score(text, opts);
       if (flags.json) {
         console.log(JSON.stringify({ score: s }));
       } else {
@@ -838,7 +856,11 @@ async function main() {
     }
 
     case 'humanize': {
-      const result = humanize(text, { autofix: flags.autofix, verbose: flags.verbose });
+      const result = humanize(text, {
+        autofix: flags.autofix,
+        verbose: flags.verbose,
+        ignoreCode: opts.ignoreCode,
+      });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
       } else {
@@ -859,7 +881,10 @@ async function main() {
     }
 
     case 'suggest': {
-      const result = humanize(text, { verbose: flags.verbose });
+      const result = humanize(text, {
+        verbose: flags.verbose,
+        ignoreCode: opts.ignoreCode,
+      });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
       } else {
@@ -869,7 +894,8 @@ async function main() {
     }
 
     case 'stats': {
-      const stats = computeStats(text);
+      const statsText = opts.ignoreCode ? stripCodeSnippets(text) : text;
+      const stats = computeStats(statsText);
       if (flags.json) {
         console.log(JSON.stringify(stats, null, 2));
       } else {
@@ -884,7 +910,9 @@ async function main() {
         process.exit(1);
       }
 
-      const result = compareFiles(flags.before, flags.after);
+      const result = compareFiles(flags.before, flags.after, {
+        ignoreCode: opts.ignoreCode,
+      });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
       } else {
@@ -909,6 +937,7 @@ async function main() {
         minWords: scanOptions.minWords,
         ignoreDirs: scanOptions.ignoreDirs,
         includeDefaultIgnore: scanOptions.includeDefaultIgnore,
+        ignoreCode: scanOptions.ignoreCode,
       });
 
       if (flags.json) {

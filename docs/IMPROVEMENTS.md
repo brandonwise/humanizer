@@ -2,6 +2,16 @@
 
 This file tracks what shipped and what we plan to build next.
 
+## Shipped in v2.4
+
+### Code-aware analysis mode (`--ignore-code`)
+
+- Added optional code-snippet masking for analysis, score, stats, suggest, report, scan, and compare workflows.
+- Supports both fenced code blocks (```/~~~) and inline backtick snippets.
+- Preserves line breaks while masking snippets, so finding line numbers stay stable.
+
+Why: technical docs often include code examples that intentionally contain AI-style phrasing. Those snippets should not dominate writing-quality scores.
+
 ## Shipped in v2.3
 
 ### Detection hardening (pattern 29)
@@ -44,25 +54,18 @@ The older feature set worked well for obvious chatbot text. The new patterns clo
 
 ## Current known limitations
 
-- Docs that intentionally contain AI-style examples will score high (expected)
-- The analyzer does not yet skip fenced code blocks by default
+- Docs that intentionally contain AI-style examples will score high unless `--ignore-code` is enabled
 - Very short text can still be noisy
 
 ## Next candidate improvements (v2.3)
 
-### 1) Optional code-block ignore mode
-
-Add a scan/analyze option to skip fenced code blocks and inline snippets.
-
-Why: technical docs often quote "bad" examples on purpose.
-
-### 2) Baseline-aware doc gating
+### 1) Baseline-aware doc gating
 
 Store a baseline JSON report and fail only on regressions, not absolute score.
 
 Why: avoids blocking teams when legacy docs are still being cleaned up.
 
-### 3) Better non-English handling
+### 2) Better non-English handling
 
 Reduce false positives on multilingual docs and mixed-language text.
 

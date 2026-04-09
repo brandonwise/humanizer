@@ -159,6 +159,25 @@ describe('scanPath', () => {
     expect(result.summary.scannedFiles).toBe(1);
     expect(result.files[0].file.endsWith('notes.md')).toBe(true);
   });
+
+  it('can ignore code snippets during scan', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    const content = [
+      'Release notes',
+      '```md',
+      'Great question! This serves as a testament to innovation.',
+      '```',
+      'Shipped bug fixes and reduced latency by 18%.',
+    ].join('\n');
+
+    fs.writeFileSync(path.join(tmp, 'notes.md'), content);
+
+    const regular = scanPath(tmp, { exts: ['md'], minWords: 3, ignoreCode: false });
+    const ignoreCode = scanPath(tmp, { exts: ['md'], minWords: 3, ignoreCode: true });
+
+    expect(regular.files[0].score).toBeGreaterThan(ignoreCode.files[0].score);
+  });
 });
 
 describe('compareTexts and compareFiles', () => {
@@ -187,5 +206,15 @@ describe('compareTexts and compareFiles', () => {
     expect(result.before.score).toBeGreaterThanOrEqual(0);
     expect(result.after.score).toBeGreaterThanOrEqual(0);
     expect(typeof result.delta.score).toBe('number');
+  });
+
+  it('supports ignoreCode option in compare workflows', () => {
+    const before = '```md\nGreat question!\n```\nShipped bug fixes.';
+    const after = '```md\nGreat question!\n```\nShipped bug fixes and lowered latency.';
+
+    const regular = compareTexts(before, after);
+    const codeAware = compareTexts(before, after, { ignoreCode: true });
+
+    expect(regular.before.score).toBeGreaterThan(codeAware.before.score);
   });
 });

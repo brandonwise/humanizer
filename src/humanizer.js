@@ -124,12 +124,13 @@ function autoFix(text) {
  *   - autofix {boolean}   Apply safe auto-fixes
  *   - verbose {boolean}   Show all matches
  *   - includeStats {boolean}  Include statistical suggestions
+ *   - ignoreCode {boolean}  Ignore fenced/inline code snippets during analysis
  * @returns {object}       — Suggestions report
  */
 function humanize(text, opts = {}) {
-  const { autofix = false, includeStats = true } = opts;
+  const { autofix = false, includeStats = true, ignoreCode = false } = opts;
 
-  const analysis = analyze(text, { verbose: true, includeStats });
+  const analysis = analyze(text, { verbose: true, includeStats, ignoreCode });
 
   // Group by priority
   const critical = []; // weight 4-5: dead giveaways

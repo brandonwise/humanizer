@@ -16,6 +16,7 @@
 
 const { patterns, wordCount } = require('./patterns');
 const { computeStats, computeUniformityScore } = require('./stats');
+const { stripCodeSnippets } = require('./preprocess');
 
 // ─── Category Labels ────────────────────────────────────
 
@@ -37,17 +38,19 @@ const CATEGORY_LABELS = {
  *   - verbose {boolean}     Show all matches (not just top 5 per pattern)
  *   - patternsToCheck {number[]}  Only run specific pattern IDs
  *   - includeStats {boolean}  Include full text statistics (default: true)
+ *   - ignoreCode {boolean}  Ignore fenced/inline code snippets before analysis
  *   - config {object}       Custom config overrides
  * @returns {object}     — Full analysis result
  */
 function analyze(text, opts = {}) {
-  const { verbose = false, patternsToCheck = null, includeStats = true } = opts;
+  const { verbose = false, patternsToCheck = null, includeStats = true, ignoreCode = false } = opts;
 
   if (!text || typeof text !== 'string') {
     return emptyResult();
   }
 
-  const trimmed = text.trim();
+  const preparedText = ignoreCode ? stripCodeSnippets(text) : text;
+  const trimmed = preparedText.trim();
   if (trimmed.length === 0) return emptyResult();
 
   const words = wordCount(trimmed);
@@ -212,8 +215,8 @@ function buildSummary(finalScore, totalMatches, findings, words, stats) {
 /**
  * Quick score — returns just the number (0-100).
  */
-function score(text) {
-  return analyze(text).score;
+function score(text, opts = {}) {
+  return analyze(text, opts).score;
 }
 
 // ─── Formatting ──────────────────────────────────────────

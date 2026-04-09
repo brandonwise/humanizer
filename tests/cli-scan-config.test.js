@@ -111,4 +111,41 @@ describe('scan config handling', () => {
     expect(run.status).toBe(2);
     expect(run.stdout).toContain('REPO SCAN');
   });
+
+  it('supports ignoreCode from config', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-cli-config-'));
+    const target = path.join(tmp, 'notes.md');
+
+    fs.writeFileSync(
+      target,
+      [
+        '```md',
+        'Great question! This serves as a testament to innovation.',
+        '```',
+        'Shipped fixes.',
+      ].join('\n'),
+    );
+
+    const configPath = path.join(tmp, 'humanizer.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify(
+        {
+          scan: {
+            extensions: ['md'],
+            minWords: 1,
+            ignoreCode: true,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const run = runCli(['scan', target, '--json', '--config', configPath]);
+    expect(run.status).toBe(0);
+
+    const payload = JSON.parse(run.stdout);
+    expect(payload.files[0].score).toBeLessThan(35);
+  });
 });
