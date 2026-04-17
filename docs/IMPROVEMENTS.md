@@ -2,6 +2,17 @@
 
 This file tracks what shipped and what we plan to build next.
 
+## Shipped in v2.5
+
+### Baseline-aware doc gating (`--baseline`, `--fail-on-regression`)
+
+- Added baseline comparison support to `scan` so teams can compare current scores against a prior scan JSON file.
+- Added configurable regression threshold (`--regression-threshold`) to ignore tiny score noise.
+- Added regression-only CI gating (`--fail-on-regression`) so legacy docs do not block progress unless they get worse.
+- Added config support (`scan.baseline`, `scan.regressionThreshold`, `scan.failOnRegression`).
+
+Why: absolute score gates punish teams with existing docs debt. Regression-only gating keeps quality moving in the right direction while teams pay down old content gradually.
+
 ## Shipped in v2.4
 
 ### Code-aware analysis mode (`--ignore-code`)
@@ -57,15 +68,9 @@ The older feature set worked well for obvious chatbot text. The new patterns clo
 - Docs that intentionally contain AI-style examples will score high unless `--ignore-code` is enabled
 - Very short text can still be noisy
 
-## Next candidate improvements (v2.3)
+## Next candidate improvements
 
-### 1) Baseline-aware doc gating
-
-Store a baseline JSON report and fail only on regressions, not absolute score.
-
-Why: avoids blocking teams when legacy docs are still being cleaned up.
-
-### 2) Better non-English handling
+### Better non-English handling
 
 Reduce false positives on multilingual docs and mixed-language text.
 

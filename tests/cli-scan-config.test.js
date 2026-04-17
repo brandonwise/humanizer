@@ -148,4 +148,59 @@ describe('scan config handling', () => {
     const payload = JSON.parse(run.stdout);
     expect(payload.files[0].score).toBeLessThan(35);
   });
+
+  it('supports baseline regression gating from config', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-cli-config-'));
+    const target = path.join(tmp, 'doc.md');
+    const baselinePath = path.join(tmp, 'baseline.json');
+
+    fs.writeFileSync(
+      target,
+      'Great question! Here is a comprehensive overview. This serves as a testament to innovation. I hope this helps!',
+    );
+
+    fs.writeFileSync(
+      baselinePath,
+      JSON.stringify(
+        {
+          targetPath: tmp,
+          files: [
+            {
+              file: target,
+              score: 10,
+              totalMatches: 1,
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const configPath = path.join(tmp, 'humanizer.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify(
+        {
+          scan: {
+            extensions: ['md'],
+            minWords: 1,
+            baseline: './baseline.json',
+            regressionThreshold: 5,
+            failOnRegression: true,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const run = runCli(['scan', target, '--json', '--config', configPath]);
+
+    expect(run.status).toBe(3);
+
+    const payload = JSON.parse(run.stdout);
+    expect(payload.baselineComparison.summary.regressions).toBe(1);
+    expect(payload.baselineComparison.regressions[0].relativePath).toBe('doc.md');
+  });
 });
