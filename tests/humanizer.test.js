@@ -100,6 +100,7 @@ describe('humanize', () => {
   it('returns a valid suggestion object', () => {
     const result = humanize('This is a testament to great things.');
     expect(result).toHaveProperty('score');
+    expect(result).toHaveProperty('reliability');
     expect(result).toHaveProperty('critical');
     expect(result).toHaveProperty('important');
     expect(result).toHaveProperty('minor');
@@ -172,6 +173,7 @@ describe('formatSuggestions', () => {
     expect(typeof output).toBe('string');
     expect(output).toContain('HUMANIZATION SUGGESTIONS');
     expect(output).toContain('AI Score:');
+    expect(output).toContain('Confidence:');
   });
 
   it('includes guidance section', () => {

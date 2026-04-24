@@ -172,6 +172,7 @@ function humanize(text, opts = {}) {
     score: analysis.score,
     patternScore: analysis.patternScore,
     uniformityScore: analysis.uniformityScore,
+    reliability: analysis.reliability,
     wordCount: analysis.wordCount,
     totalIssues: analysis.totalMatches,
     stats: analysis.stats,
@@ -352,6 +353,11 @@ function formatSuggestions(result) {
   lines.push(
     `  Issues: ${result.totalIssues}  |  Pattern: ${result.patternScore}  |  Uniformity: ${result.uniformityScore}`,
   );
+  if (result.reliability) {
+    lines.push(
+      `  Confidence: ${formatReliabilityLabel(result.reliability.level)} (${result.reliability.score}/100)`,
+    );
+  }
   lines.push('');
 
   if (result.critical.length > 0) {
@@ -419,6 +425,12 @@ function formatSuggestions(result) {
 function truncate(str, len) {
   if (typeof str !== 'string') return '';
   return str.length > len ? `${str.substring(0, len)}...` : str;
+}
+
+function formatReliabilityLabel(level) {
+  if (level === 'high') return 'High confidence';
+  if (level === 'medium') return 'Medium confidence';
+  return 'Low confidence';
 }
 
 // ─── Exports ─────────────────────────────────────────────

@@ -84,6 +84,21 @@ function scoreLabel(s) {
   return 'Heavily AI-generated';
 }
 
+/**
+ * Get a colored reliability badge.
+ *
+ * @param {{level: string, score: number}} reliability
+ * @returns {string}
+ */
+function reliabilityBadge(reliability) {
+  if (!reliability) return color.gray('Unknown confidence');
+
+  const label = `${reliability.level.toUpperCase()} confidence (${reliability.score}/100)`;
+  if (reliability.level === 'high') return color.green(`🟢 ${label}`);
+  if (reliability.level === 'medium') return color.yellow(`🟡 ${label}`);
+  return color.red(`🔴 ${label}`);
+}
+
 // ─── CLI Arg Parsing ─────────────────────────────────────
 
 const args = process.argv.slice(2);
@@ -598,6 +613,12 @@ function formatColoredReport(result) {
   lines.push(
     `  ${color.dim(`Words: ${result.wordCount}  |  Matches: ${result.totalMatches}  |  Pattern: ${result.patternScore}  |  Uniformity: ${result.uniformityScore}`)}`,
   );
+  if (result.reliability) {
+    lines.push(`  ${color.dim(`Confidence: ${reliabilityBadge(result.reliability)}`)}`);
+    if (result.reliability.level !== 'high' && result.reliability.reasons.length > 0) {
+      lines.push(`  ${color.dim(`Why: ${result.reliability.reasons.slice(0, 2).join(' ')}`)}`);
+    }
+  }
   lines.push('');
   lines.push(`  ${result.summary}`);
   lines.push('');
@@ -677,6 +698,9 @@ function formatGroupedSuggestions(result) {
   lines.push('');
   lines.push(color.bold(`  Score: ${scoreBadge(result.score)}  (${scoreLabel(result.score)})`));
   lines.push(`  ${color.dim(`${result.totalIssues} issues found in ${result.wordCount} words`)}`);
+  if (result.reliability) {
+    lines.push(`  ${color.dim(`Confidence: ${reliabilityBadge(result.reliability)}`)}`);
+  }
   lines.push('');
 
   if (result.critical.length > 0) {

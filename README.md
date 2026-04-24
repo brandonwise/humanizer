@@ -128,6 +128,7 @@ humanizer compare --before draft-v1.md --after draft-v2.md
 - **Config-driven scan defaults** — keep monorepo scan settings in one JSON file (`--config`) and layer one-off overrides from CLI.
 - **Custom ignore controls** — skip noisy directories with `--ignore-dirs` or disable built-in excludes with `--no-default-ignore`.
 - **Code-aware analysis mode (`--ignore-code`)** — ignore fenced code blocks and inline code snippets so technical docs do not get false positives from sample code.
+- Confidence calibration: every analysis now includes a confidence rating (high/medium/low) with short-sample warnings to reduce false-positive overconfidence.
 - **Draft compare (`compare`)** — compare two versions of text and show exactly which patterns improved or regressed.
 - **Unicode obfuscation detection (pattern 29)** — flags hidden zero-width/soft-hyphen tricks and suspicious non-breaking-space density often used in detector-evasion text.
 
