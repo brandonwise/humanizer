@@ -180,15 +180,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (suggestions.critical?.length > 0) {
           output += `### 🔴 Critical (Dead giveaways)\n`;
           for (const s of suggestions.critical) {
-            output += `- ${s}\n`;
+            output += `- L${s.line}: [${s.pattern}] "${s.text}" → ${s.suggestion}\n`;
           }
           output += '\n';
         }
-        
+
         if (suggestions.important?.length > 0) {
           output += `### 🟠 Important (Noticeable patterns)\n`;
           for (const s of suggestions.important) {
-            output += `- ${s}\n`;
+            output += `- L${s.line}: [${s.pattern}] "${s.text}" → ${s.suggestion}\n`;
           }
           output += '\n';
         }
