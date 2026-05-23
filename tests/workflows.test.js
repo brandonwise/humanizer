@@ -179,6 +179,23 @@ describe('scanPath', () => {
 
     expect(regular.files[0].score).toBeGreaterThan(ignoreCode.files[0].score);
   });
+
+  it('can ignore quoted blocks during scan', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    const content = [
+      'Release notes',
+      '> Great question! This serves as a testament to innovation.',
+      'Shipped bug fixes and reduced latency by 18%.',
+    ].join('\n');
+
+    fs.writeFileSync(path.join(tmp, 'notes.md'), content);
+
+    const regular = scanPath(tmp, { exts: ['md'], minWords: 3, ignoreQuotes: false });
+    const ignoreQuotes = scanPath(tmp, { exts: ['md'], minWords: 3, ignoreQuotes: true });
+
+    expect(regular.files[0].score).toBeGreaterThan(ignoreQuotes.files[0].score);
+  });
 });
 
 describe('compareTexts and compareFiles', () => {
@@ -217,6 +234,16 @@ describe('compareTexts and compareFiles', () => {
     const codeAware = compareTexts(before, after, { ignoreCode: true });
 
     expect(regular.before.score).toBeGreaterThan(codeAware.before.score);
+  });
+
+  it('supports ignoreQuotes option in compare workflows', () => {
+    const before = '> Great question!\nShipped bug fixes.';
+    const after = '> Great question!\nShipped bug fixes and lowered latency.';
+
+    const regular = compareTexts(before, after);
+    const quoteAware = compareTexts(before, after, { ignoreQuotes: true });
+
+    expect(regular.before.score).toBeGreaterThan(quoteAware.before.score);
   });
 });
 

@@ -2,6 +2,16 @@
 
 This file tracks what shipped and what we plan to build next.
 
+## Shipped in v2.6
+
+### Quote-aware analysis mode (`--ignore-quotes`)
+
+- Added optional quote masking for markdown/email-style blockquotes and HTML `<blockquote>` sections.
+- Wired quote-aware preprocessing through analysis, stats, suggest, report, scan, and compare workflows.
+- Added scan-config support (`scan.ignoreQuotes`) plus regression tests for preprocessing and workflow behavior.
+
+Why: docs, review notes, and pasted support/forum threads often quote AI-sounding text on purpose. Those examples should not swamp the score for the surrounding human-written content.
+
 ## Shipped in v2.5
 
 ### Baseline-aware doc gating (`--baseline`, `--fail-on-regression`)
@@ -65,7 +75,7 @@ The older feature set worked well for obvious chatbot text. The new patterns clo
 
 ## Current known limitations
 
-- Docs that intentionally contain AI-style examples will score high unless `--ignore-code` is enabled
+- Docs that intentionally contain AI-style examples will score high unless `--ignore-code` or `--ignore-quotes` is enabled
 - Very short text can still be noisy
 
 ## Next candidate improvements

@@ -88,6 +88,20 @@ describe('analyze', () => {
     expect(ignoreCode.summary.toLowerCase()).not.toContain('great question');
   });
 
+  it('can ignore quoted blocks during analysis', () => {
+    const text = [
+      'Draft notes:',
+      '> Great question! This serves as a testament to innovation.',
+      'Actual summary: shipped bug fixes and reduced latency by 18%.',
+    ].join('\n');
+
+    const regular = analyze(text);
+    const ignoreQuotes = analyze(text, { ignoreQuotes: true });
+
+    expect(regular.score).toBeGreaterThan(ignoreQuotes.score);
+    expect(ignoreQuotes.summary.toLowerCase()).not.toContain('great question');
+  });
+
   it('marks short samples as low confidence', () => {
     const result = analyze('Great question! This helps.');
     expect(result.reliability.level).toBe('low');

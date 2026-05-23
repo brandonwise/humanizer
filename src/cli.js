@@ -25,7 +25,7 @@ const { analyze, score, formatMarkdown, formatJSON } = require('./analyzer');
 const { humanize, formatSuggestions } = require('./humanizer');
 const { computeStats } = require('./stats');
 const { scanPath, compareScanResults, compareFiles, normalizeExtensions } = require('./workflows');
-const { stripCodeSnippets } = require('./preprocess');
+const { prepareText } = require('./preprocess');
 
 // ─── Tiny Color Helper (no chalk dependency) ─────────────
 
@@ -124,6 +124,7 @@ const flags = {
   ignoreDirs: null,
   includeDefaultIgnore: null,
   ignoreCode: null,
+  ignoreQuotes: null,
 };
 
 // Parse -f / --file flag
@@ -234,6 +235,10 @@ if (args.includes('--ignore-code')) {
   flags.ignoreCode = true;
 }
 
+if (args.includes('--ignore-quotes')) {
+  flags.ignoreQuotes = true;
+}
+
 // ─── Scan Config Resolution ──────────────────────────────
 
 function parseNonNegativeInt(value, label) {
@@ -332,6 +337,8 @@ function resolveScanOptions() {
     typeof scanConfig.includeDefaultIgnore === 'boolean' ? scanConfig.includeDefaultIgnore : null;
   const configIgnoreCode =
     typeof scanConfig.ignoreCode === 'boolean' ? scanConfig.ignoreCode : null;
+  const configIgnoreQuotes =
+    typeof scanConfig.ignoreQuotes === 'boolean' ? scanConfig.ignoreQuotes : null;
   const configFailOnRegression =
     typeof scanConfig.failOnRegression === 'boolean' ? scanConfig.failOnRegression : null;
   const configBaseline =
@@ -362,6 +369,8 @@ function resolveScanOptions() {
       ? flags.includeDefaultIgnore
       : (configIncludeDefaultIgnore ?? true);
   const ignoreCode = flags.ignoreCode !== null ? flags.ignoreCode : (configIgnoreCode ?? false);
+  const ignoreQuotes =
+    flags.ignoreQuotes !== null ? flags.ignoreQuotes : (configIgnoreQuotes ?? false);
 
   if (failOnRegression && !baseline) {
     throw new Error(
@@ -379,6 +388,7 @@ function resolveScanOptions() {
     ignoreDirs,
     includeDefaultIgnore,
     ignoreCode,
+    ignoreQuotes,
   };
 }
 
@@ -422,6 +432,7 @@ ${color.bold('Options:')}
   --ignore-dirs <list>    Extra dirs to ignore when scanning (comma-separated)
   --no-default-ignore     Disable built-in ignores (.git,node_modules,dist,...)
   --ignore-code           Ignore fenced/inline code snippets during analysis
+  --ignore-quotes         Ignore markdown/email quote blocks during analysis
   --config <file>         Load scan defaults from JSON (scan section)
   --help, -h              Show this help
 
@@ -434,6 +445,9 @@ ${color.bold('Examples:')}
 
   ${color.gray('# Analyze docs while ignoring code examples')}
   humanizer analyze docs/guide.md --ignore-code
+
+  ${color.gray('# Ignore quoted examples or pasted email/forum replies')}
+  humanizer analyze draft.md --ignore-quotes
 
   ${color.gray('# Full markdown report')}
   humanizer report article.txt > report.md
@@ -452,6 +466,9 @@ ${color.bold('Examples:')}
 
   ${color.gray('# Scan docs but ignore fenced/inline code snippets')}
   humanizer scan docs --ext md --ignore-code
+
+  ${color.gray('# Scan docs but ignore quoted examples')}
+  humanizer scan docs --ext md --ignore-quotes
 
   ${color.gray('# Scan a large codebase with config defaults')}
   humanizer scan . --config .humanizer.json --ignore-dirs vendor,generated
@@ -950,6 +967,7 @@ async function main() {
     verbose: flags.verbose,
     patternsToCheck: flags.patterns,
     ignoreCode: flags.ignoreCode === true,
+    ignoreQuotes: flags.ignoreQuotes === true,
   };
 
   switch (command) {
@@ -978,6 +996,7 @@ async function main() {
         autofix: flags.autofix,
         verbose: flags.verbose,
         ignoreCode: opts.ignoreCode,
+        ignoreQuotes: opts.ignoreQuotes,
       });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -1002,6 +1021,7 @@ async function main() {
       const result = humanize(text, {
         verbose: flags.verbose,
         ignoreCode: opts.ignoreCode,
+        ignoreQuotes: opts.ignoreQuotes,
       });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -1012,7 +1032,10 @@ async function main() {
     }
 
     case 'stats': {
-      const statsText = opts.ignoreCode ? stripCodeSnippets(text) : text;
+      const statsText = prepareText(text, {
+        ignoreCode: opts.ignoreCode,
+        ignoreQuotes: opts.ignoreQuotes,
+      });
       const stats = computeStats(statsText);
       if (flags.json) {
         console.log(JSON.stringify(stats, null, 2));
@@ -1030,6 +1053,7 @@ async function main() {
 
       const result = compareFiles(flags.before, flags.after, {
         ignoreCode: opts.ignoreCode,
+        ignoreQuotes: opts.ignoreQuotes,
       });
       if (flags.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -1056,6 +1080,7 @@ async function main() {
         ignoreDirs: scanOptions.ignoreDirs,
         includeDefaultIgnore: scanOptions.includeDefaultIgnore,
         ignoreCode: scanOptions.ignoreCode,
+        ignoreQuotes: scanOptions.ignoreQuotes,
       });
 
       let baselineComparison = null;

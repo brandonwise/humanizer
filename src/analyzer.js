@@ -16,7 +16,7 @@
 
 const { patterns, wordCount } = require('./patterns');
 const { computeStats, computeUniformityScore } = require('./stats');
-const { stripCodeSnippets } = require('./preprocess');
+const { prepareText } = require('./preprocess');
 
 // ─── Category Labels ────────────────────────────────────
 
@@ -41,17 +41,24 @@ const RELIABILITY_RECOMMENDED_WORDS = 150;
  *   - patternsToCheck {number[]}  Only run specific pattern IDs
  *   - includeStats {boolean}  Include full text statistics (default: true)
  *   - ignoreCode {boolean}  Ignore fenced/inline code snippets before analysis
+ *   - ignoreQuotes {boolean}  Ignore quoted blocks before analysis
  *   - config {object}       Custom config overrides
  * @returns {object}     — Full analysis result
  */
 function analyze(text, opts = {}) {
-  const { verbose = false, patternsToCheck = null, includeStats = true, ignoreCode = false } = opts;
+  const {
+    verbose = false,
+    patternsToCheck = null,
+    includeStats = true,
+    ignoreCode = false,
+    ignoreQuotes = false,
+  } = opts;
 
   if (!text || typeof text !== 'string') {
     return emptyResult();
   }
 
-  const preparedText = ignoreCode ? stripCodeSnippets(text) : text;
+  const preparedText = prepareText(text, { ignoreCode, ignoreQuotes });
   const trimmed = preparedText.trim();
   if (trimmed.length === 0) return emptyResult();
 
