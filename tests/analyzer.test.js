@@ -377,6 +377,24 @@ describe('pattern detection', () => {
     expect(result.findings[0].patternId).toBe(29);
     expect(result.totalMatches).toBeGreaterThanOrEqual(3);
   });
+
+  // 30. Product positioning fog
+  it('detects clustered product positioning fog', () => {
+    const text =
+      'The roadmap will drive engagement, unlock value, and create a seamless user experience while giving leaders actionable insights.';
+    const result = analyze(text, { patternsToCheck: [30] });
+    expect(result.findings.length).toBeGreaterThan(0);
+    expect(result.findings[0].patternId).toBe(30);
+    expect(result.totalMatches).toBeGreaterThanOrEqual(4);
+  });
+
+  it('does not flag a single product cliche by itself', () => {
+    const result = analyze('The dashboard will drive adoption for account admins.', {
+      patternsToCheck: [30],
+    });
+    expect(result.findings.length).toBe(0);
+    expect(result.totalMatches).toBe(0);
+  });
 });
 
 // ─── AI Sample Full Analysis ─────────────────────────────
