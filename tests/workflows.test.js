@@ -136,6 +136,21 @@ describe('scanPath', () => {
     expect(sharedPattern.totalMatches).toBeGreaterThanOrEqual(sharedPattern.affectedFiles);
   });
 
+  it('surfaces product positioning fog as a scan hotspot', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
+
+    fs.writeFileSync(
+      path.join(tmp, 'launch.md'),
+      'The launch will drive adoption, unlock value, and deliver a seamless user experience with actionable insights for operators.',
+    );
+
+    const result = scanPath(tmp, { exts: ['md'], minWords: 3 });
+    const hotspot = result.patternHotspots.find((p) => p.patternId === 30);
+
+    expect(hotspot).toBeDefined();
+    expect(hotspot.totalMatches).toBeGreaterThanOrEqual(4);
+  });
+
   it('respects custom ignore dirs during scan', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'humanizer-scan-'));
 

@@ -255,6 +255,11 @@ function buildGuidance(analysis) {
       'Remove hidden unicode characters (zero-width, soft hyphen, NBSP). They can break readability and look like detector-gaming obfuscation.',
     );
   }
+  if (ids.has(30)) {
+    tips.push(
+      'Replace product-positioning fog with a user, a metric, and the behavior that changed. "Drive engagement" is a claim; clicks, retention, or task completion are evidence.',
+    );
+  }
 
   if (analysis.score >= 50) {
     tips.push(

@@ -161,6 +161,15 @@ describe('humanize', () => {
     expect(result.styleTips).toBeDefined();
     expect(Array.isArray(result.styleTips)).toBe(true);
   });
+
+  it('gives concrete guidance for product positioning fog', () => {
+    const text =
+      'This platform will drive engagement, unlock value, and create a frictionless customer experience with actionable insights.';
+    const result = humanize(text);
+
+    expect(result.critical.some((s) => s.patternId === 30)).toBe(true);
+    expect(result.guidance.some((g) => g.includes('user, a metric, and the behavior'))).toBe(true);
+  });
 });
 
 // ─── formatSuggestions ───────────────────────────────────
