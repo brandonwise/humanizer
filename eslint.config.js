@@ -72,6 +72,25 @@ module.exports = [
     },
   },
   {
+    files: ['mcp-server/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      semi: ['error', 'always'],
+      quotes: ['error', 'single', { avoidEscape: true }],
+      'comma-dangle': ['error', 'always-multiline'],
+      eqeqeq: ['error', 'always'],
+    },
+  },
+  {
     ignores: ['node_modules/', 'coverage/', 'dist/'],
   },
 ];
