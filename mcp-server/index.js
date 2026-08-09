@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 /**
  * Humanizer MCP Server
- * 
+ *
  * Exposes AI writing detection and humanization tools via Model Context Protocol.
  * Works with Claude Desktop, ChatGPT, VS Code, and other MCP clients.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Import humanizer modules
 import { analyze, score } from '../src/analyzer.js';
-import { humanize, autoFix } from '../src/humanizer.js';
+import { humanize } from '../src/humanizer.js';
 import { computeStats } from '../src/stats.js';
+import { formatHumanizeOutput } from './format.js';
 
 const server = new Server(
   {
@@ -27,7 +25,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 // Define available tools
@@ -36,7 +34,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'score',
-        description: 'Quick AI score (0-100). Higher = more AI-like. 0-25 human, 26-50 light AI touch, 51-75 moderate, 76-100 heavy AI.',
+        description:
+          'Quick AI score (0-100). Higher = more AI-like. 0-25 human, 26-50 light AI touch, 51-75 moderate, 76-100 heavy AI.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -50,7 +49,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'analyze',
-        description: 'Full AI writing analysis with pattern matches, scores by category, and statistical analysis (burstiness, vocabulary diversity, readability).',
+        description:
+          'Full AI writing analysis with pattern matches, scores by category, and statistical analysis (burstiness, vocabulary diversity, readability).',
         inputSchema: {
           type: 'object',
           properties: {
@@ -69,7 +69,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'humanize',
-        description: 'Get suggestions to make text sound more human. Groups issues by priority (critical, important, guidance) with specific fixes.',
+        description:
+          'Get suggestions to make text sound more human. Groups issues by priority (critical, important, guidance) with specific fixes.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -88,7 +89,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'stats',
-        description: 'Statistical text analysis only: burstiness, type-token ratio, sentence variation, trigram repetition, readability score.',
+        description:
+          'Statistical text analysis only: burstiness, type-token ratio, sentence variation, trigram repetition, readability score.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -121,10 +123,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 s <= 25
                   ? 'Mostly human-sounding'
                   : s <= 50
-                  ? 'Lightly AI-touched'
-                  : s <= 75
-                  ? 'Moderately AI-influenced'
-                  : 'Heavily AI-generated'
+                    ? 'Lightly AI-touched'
+                    : s <= 75
+                      ? 'Moderately AI-influenced'
+                      : 'Heavily AI-generated'
               }`,
             },
           ],
@@ -136,14 +138,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           verbose: args.verbose || false,
           includeStats: true,
         });
-        
-        let output = `## AI Analysis\n\n`;
+
+        let output = '## AI Analysis\n\n';
         output += `**Score:** ${result.score}/100\n`;
         output += `**Pattern Score:** ${result.patternScore}/100\n`;
         output += `**Uniformity Score:** ${result.uniformityScore}/100\n\n`;
-        
+
         if (result.categories) {
-          output += `### Category Breakdown\n`;
+          output += '### Category Breakdown\n';
           for (const [cat, data] of Object.entries(result.categories)) {
             if (data.count > 0) {
               output += `- **${cat}:** ${data.count} issues\n`;
@@ -151,16 +153,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           output += '\n';
         }
-        
+
         if (result.stats) {
-          output += `### Statistical Signals\n`;
+          output += '### Statistical Signals\n';
           output += `- Burstiness: ${result.stats.burstiness?.toFixed(2) || 'N/A'} (human: 0.5-1.0, AI: 0.1-0.3)\n`;
           output += `- Type-Token Ratio: ${result.stats.typeTokenRatio?.toFixed(2) || 'N/A'} (human: 0.5-0.7, AI: 0.3-0.5)\n`;
           output += `- Readability (FK): ${result.stats.fleschKincaid?.toFixed(1) || 'N/A'}\n`;
         }
-        
+
         if (args.verbose && result.findings?.length > 0) {
-          output += `\n### Pattern Matches\n`;
+          output += '\n### Pattern Matches\n';
           for (const f of result.findings.slice(0, 10)) {
             output += `- **${f.pattern}:** "${f.match}" (weight: ${f.weight})\n`;
           }
@@ -168,58 +170,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             output += `\n...and ${result.findings.length - 10} more\n`;
           }
         }
-        
+
         return { content: [{ type: 'text', text: output }] };
       }
 
       case 'humanize': {
         const suggestions = humanize(args.text, { autofix: args.autofix || false });
-        
-        let output = `## Humanization Suggestions\n\n`;
-        
-        if (suggestions.critical?.length > 0) {
-          output += `### 🔴 Critical (Dead giveaways)\n`;
-          for (const s of suggestions.critical) {
-            output += `- ${s}\n`;
-          }
-          output += '\n';
-        }
-        
-        if (suggestions.important?.length > 0) {
-          output += `### 🟠 Important (Noticeable patterns)\n`;
-          for (const s of suggestions.important) {
-            output += `- ${s}\n`;
-          }
-          output += '\n';
-        }
-        
-        if (suggestions.guidance?.length > 0) {
-          output += `### 🟡 Guidance (Writing tips)\n`;
-          for (const s of suggestions.guidance.slice(0, 5)) {
-            output += `- ${s}\n`;
-          }
-          output += '\n';
-        }
-        
-        if (args.autofix && suggestions.autofix?.text) {
-          output += `### ✅ Auto-fixed Text\n\n${suggestions.autofix.text}\n`;
-        }
-        
+        const output = formatHumanizeOutput(suggestions, { autofix: args.autofix || false });
+
         return { content: [{ type: 'text', text: output }] };
       }
 
       case 'stats': {
         const stats = computeStats(args.text);
-        
-        let output = `## Statistical Analysis\n\n`;
-        output += `| Metric | Value | Human Range | AI Range |\n`;
-        output += `|--------|-------|-------------|----------|\n`;
+
+        let output = '## Statistical Analysis\n\n';
+        output += '| Metric | Value | Human Range | AI Range |\n';
+        output += '|--------|-------|-------------|----------|\n';
         output += `| Burstiness | ${stats.burstiness?.toFixed(3) || 'N/A'} | 0.5-1.0 | 0.1-0.3 |\n`;
         output += `| Type-Token Ratio | ${stats.typeTokenRatio?.toFixed(3) || 'N/A'} | 0.5-0.7 | 0.3-0.5 |\n`;
         output += `| Sentence CoV | ${stats.sentenceCoV?.toFixed(3) || 'N/A'} | 0.4-0.8 | 0.15-0.35 |\n`;
         output += `| Trigram Repetition | ${stats.trigramRepetition?.toFixed(3) || 'N/A'} | <0.05 | >0.10 |\n`;
         output += `| Flesch-Kincaid | ${stats.fleschKincaid?.toFixed(1) || 'N/A'} | varies | 8-12 |\n`;
-        
+
         return { content: [{ type: 'text', text: output }] };
       }
 
